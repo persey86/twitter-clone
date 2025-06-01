@@ -33,8 +33,8 @@ jobs:
         run: ./gradlew bootJar
 
       # Build the Docker image
-      - name: Build Docker image
-        run: ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository_owner }}/twitter-clone:latest
+#      - name: Build Docker image
+#        run: ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository_owner }}/twitter-clone:latest
 
       # Log in to GHCR
       - name: Log in to GHCR
@@ -44,6 +44,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Push Docker image to GHCR
-      - name: Push Docker image to GHCR
-        run: docker push ghcr.io/${{ github.repository_owner }}/twitter-clone:latest
+      - name: Build and publish Docker image
+        run: |
+          # Build the Docker image
+          docker build -t ghcr.io/${{ github.repository }}/twitter-clone:latest .
+          # Push the Docker image to GHCR
+          docker push ghcr.io/${{ github.repository }}/twitter-clone:latest
+
+#      # Push Docker image to GHCR
+#      - name: Push Docker image to GHCR
+#        run: docker push ghcr.io/${{ github.repository_owner }}/twitter-clone:latest
