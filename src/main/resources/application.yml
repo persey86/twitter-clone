@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: TwitterClone
+  profiles :
+    active : dev
+  data :
+    mongodb:
+      auto-index-creation : true
+    redis:
+      host : localhost
+      port : 6379
+      timeout : 5000
+
+#    mongodb :
+#      uri : mongodb://localhost:27017
+#      uri : ${MONGODB_URI:mongodb://mongo:27017/twitterclone}
+
+  cache :
+    type : redis
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    tags:
+      application: TwitterClone
+
+jwt:
+  secret: aVerySecureKeyThatIsAtLeast32BytesLong!
+  expiration: 86400000

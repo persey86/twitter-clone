@@ -1,0 +1,291 @@
+{
+	"info": {
+		"_postman_id": "44bd8d60-4a3a-4632-8416-b560ad6a358d",
+		"name": "Groovy Twitter API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "2060517"
+	},
+	"item": [
+		{
+			"name": "Cache Search Posts Tests",
+			"item": [
+				{
+					"name": "Search posts (1st call, should hit DB and cache)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/posts/search?query=spring",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"posts",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "spring"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search posts (2nd call, should hit cache)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/posts/search?query=spring",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"posts",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "spring"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new post (should invalidate cache)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"content\": \"spring new post\", \"authorId\": \"user2\"}"
+						},
+						"url": "http://localhost:8080/posts"
+					},
+					"response": []
+				},
+				{
+					"name": "Search posts (3rd call, should hit DB again after eviction)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/posts/search?query=spring",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"posts",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "spring"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Create Post",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"authorId\": \"<PUT-USER-ID>\",\n  \"content\": \"Hello Groovy world!\"\n}"
+				},
+				"url": "localhost:8080/posts"
+			},
+			"response": []
+		},
+		{
+			"name": "Get User subscriptions",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": "localhost:8081/posts/feed/68372a0feac122752961cb95"
+			},
+			"response": []
+		},
+		{
+			"name": "Comment on Post",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"authorId\": \"<PUT-USER-ID>\",\n  \"content\": \"Nice post!\"\n}"
+				},
+				"url": "localhost:8080/posts/<PUT-POST-ID>/comment"
+			},
+			"response": []
+		},
+		{
+			"name": "Like Post",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "localhost:8080/posts/<PUT-POST-ID>/like/<PUT-USER-ID>"
+			},
+			"response": []
+		},
+		{
+			"name": "Unlike Post",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "localhost:8080/posts/<PUT-POST-ID>/unlike/<PUT-USER-ID>"
+			},
+			"response": []
+		},
+		{
+			"name": "Follow User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "localhost:8080/users/<FOLLOWER-ID>/follow/<FOLLOWING-ID>"
+			},
+			"response": []
+		},
+		{
+			"name": "Unfollow User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "localhost:8080/users/<FOLLOWER-ID>/unfollow/<FOLLOWING-ID>"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Comments",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:8080/posts/<PUT-POST-ID>/comments"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Comment",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": "localhost:8080/posts/<POST-ID>/comment/<COMMENT-ID>"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All users",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:8081/users"
+			},
+			"response": []
+		},
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"username\": \"testuser\", \"password\": \"testpass\"}"
+				},
+				"url": "{{base_url}}/auth/register"
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"username\": \"testuser\", \"password\": \"testpass\"}"
+				},
+				"url": "{{base_url}}/auth/login"
+			},
+			"response": []
+		},
+		{
+			"name": "Logout",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": "localhost:8080/auth/logout"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
