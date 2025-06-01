@@ -8,7 +8,6 @@ group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 def spockVersion = '2.3-groovy-4.0'
-def containerVersion = '1.19.0'
 def tokenVersion = '0.11.5'
 
 java {
@@ -37,11 +36,6 @@ dependencies {
 	testImplementation 'org.spockframework:spock-core:' + spockVersion
 	testImplementation 'org.spockframework:spock-spring:' + spockVersion
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-	testImplementation 'org.testcontainers:testcontainers:1.19.3'
-//	testImplementation 'org.testcontainers:mongodb:1.19.7'
-	testImplementation "org.testcontainers:spock:1.19.3"
-	testImplementation "com.redis:testcontainers-redis:2.2.4"
 }
 
 tasks.named('test') {
