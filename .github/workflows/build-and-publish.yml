@@ -33,12 +33,9 @@ jobs:
         run: ./gradlew bootJar
 
       # Log in to GHCR
-      - name: Log in to GHCR
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+      - name : Log in to GitHub Container Registry
+        run : |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "persey86" --password-stdin
 
       - name: Build and publish Docker image
         run: |
