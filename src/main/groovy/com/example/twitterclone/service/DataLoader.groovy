@@ -1,5 +1,6 @@
 package com.example.twitterclone.service
 
+import com.example.twitterclone.model.Comment
 import com.example.twitterclone.model.Post
 import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.PostRepository
@@ -32,6 +33,7 @@ class DataLoader implements CommandLineRunner {
         user1.setUsername("bio1_user")
         user1.setBio("bio1")
         user1.setPassword("passw1")
+        user1.setFollowing(Collections.singleton("113"))
 
         User user2 = new User()
         user2.setId("112")
@@ -52,6 +54,22 @@ class DataLoader implements CommandLineRunner {
 
         postRepository.deleteAll()
 
+        List<Comment> comments = new ArrayList<>()
+        Comment comment1 = new Comment()
+        comment1.setAuthorId("111")
+        comment1.setText("Nice post!")
+
+        Comment comment2 = new Comment()
+        comment2.setAuthorId("112")
+        comment2.setText("It would be better to type nothing!")
+
+        comments.add(comment1)
+        comments.add(comment2)
+
+        Set<String> likes = new HashSet<>()
+        likes.add("111")
+        likes.add("112")
+
         Post post1 = new Post()
         post1.setContent("This is the first test post")
         post1.setAuthorId("113")
@@ -61,11 +79,14 @@ class DataLoader implements CommandLineRunner {
         post2.setContent("This is the second test post")
         post2.setAuthorId("113")
         post2.setCreatedAt(Instant.now().minusSeconds(7200))
+        post2.setComments(comments)
+        post2.setLikes(likes)
 
         Post post3 = new Post()
         post3.setContent("This is the third test post")
         post3.setAuthorId("113")
         post3.setCreatedAt(Instant.now().minusSeconds(3600))
+        post3.setLikes(likes)
 
         Post post4 = new Post()
         post4.setContent("This is the forth test post")
