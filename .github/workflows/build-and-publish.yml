@@ -37,7 +37,7 @@ jobs:
           # Log in to GHCR
       - name : Log in to GitHub Container Registry
         run : |
-              echo "${{ secrets.GHC_TOKEN }}" | docker login ghcr.io -u "persey86" --password-stdin
+#              echo "${{ secrets.GHC_TOKEN }}" | docker login ghcr.io -u "" --password-stdin
 
       - name: Publish Docker image
         run: |
