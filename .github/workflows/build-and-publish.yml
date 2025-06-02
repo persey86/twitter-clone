@@ -32,14 +32,14 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew bootJar
 
-      # Log in to GHCR
+      - name : Build Docker image
+        run : docker build -t ghcr.io/${{ github.repository }}/twitter-clone:latest .
+          # Log in to GHCR
       - name : Log in to GitHub Container Registry
         run : |
-          echo "${{ secrets.GHC_TOKEN }}" | docker login ghcr.io -u "persey86" --password-stdin
+              echo "${{ secrets.GHC_TOKEN }}" | docker login ghcr.io -u "persey86" --password-stdin
 
-      - name: Build and publish Docker image
+      - name: Publish Docker image
         run: |
-          # Build the Docker image
-          docker build -t ghcr.io/${{ github.repository }}/twitter-clone:latest .
           # Push the Docker image to GHCR
-          docker push ghcr.io/${{ github.repository }}/twitter-clone:latest
+#          docker push ghcr.io/${{ github.repository }}/twitter-clone:latest
