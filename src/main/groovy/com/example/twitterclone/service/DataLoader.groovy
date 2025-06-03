@@ -6,6 +6,7 @@ import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.PostRepository
 import com.example.twitterclone.repository.UserRepository
 import org.springframework.boot.CommandLineRunner
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 
 import java.time.Instant
@@ -14,10 +15,12 @@ import java.time.Instant
 class DataLoader implements CommandLineRunner {
     private final PostRepository postRepository
     private final UserRepository userRepository
+    private final PasswordEncoder passwordEncoder
 
-    DataLoader(PostRepository postRepository, UserRepository userRepository) {
+    DataLoader(PostRepository postRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.postRepository = postRepository
         this.userRepository = userRepository
+        this.passwordEncoder = passwordEncoder
     }
 
     @Override
@@ -32,20 +35,20 @@ class DataLoader implements CommandLineRunner {
         user1.setId("111")
         user1.setUsername("bio1_user")
         user1.setBio("bio1")
-        user1.setPassword("passw1")
+        user1.setPassword(passwordEncoder.encode("passw1"))
         user1.setFollowing(Collections.singleton("113"))
 
         User user2 = new User()
         user2.setId("112")
         user2.setUsername("bio2_user")
         user2.setBio("bio2")
-        user2.setPassword("passw2")
+        user2.setPassword(passwordEncoder.encode("passw2"))
 
         User user3 = new User()
         user3.setId("113")
         user3.setUsername("bio3_user")
         user3.setBio("bio3")
-        user3.setPassword("passw3")
+        user3.setPassword(passwordEncoder.encode("passw3"))
         user3.setFollowing(followers)
 
         userRepository.save(user1)

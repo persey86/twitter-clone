@@ -1,8 +1,9 @@
 package com.example.twitterclone.controller
 
-import com.example.twitterclone.model.User
-import com.example.twitterclone.response.UserRequestDto
 
+import com.example.twitterclone.response.RefreshRequest
+import com.example.twitterclone.response.TokenResponseDto
+import com.example.twitterclone.response.UserRequestDto
 import com.example.twitterclone.response.UserResponseDto
 import com.example.twitterclone.service.UserService
 import io.swagger.v3.oas.annotations.Operation
@@ -21,8 +22,14 @@ class AuthController {
 
     @Operation(summary = "Register user and generate token")
     @PostMapping("/register")
-    ResponseEntity<UserResponseDto> register(@RequestBody User user) {
+    ResponseEntity<UserResponseDto> register(@RequestBody UserRequestDto user) {
         def response =  userService.register(user)
+        return ResponseEntity.ok(response)
+    }
+
+    @PostMapping("/refresh")
+    ResponseEntity<TokenResponseDto> refreshToken(@RequestBody RefreshRequest request) {
+        def response = userService.refreshToken(request.refreshToken)
         return ResponseEntity.ok(response)
     }
 
@@ -35,14 +42,22 @@ class AuthController {
     }
 
     @PostMapping("/login")
-    ResponseEntity<UserResponseDto> login(@RequestBody UserRequestDto request) {
+    ResponseEntity<TokenResponseDto> login(@RequestBody UserRequestDto request) {
         def response = userService.logIn(request)
         return ResponseEntity.ok(response)
     }
 
     @PostMapping("/logout")
-    ResponseEntity<?> logOut(@RequestHeader("Authorization") String authHeader) {
-        userService.logOut(authHeader)
-        return ResponseEntity.ok([message: "Logged out successfully"])
+    ResponseEntity<?> logOut(@RequestHeader("Authorization") String authHeader,
+                             @RequestBody RefreshRequest request) {
+        if (!authHeader?.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
+        try {
+            userService.logOut(authHeader, request.refreshToken)
+            return ResponseEntity.ok([message: "Logged out successfully"])
+        } catch (Exception ignored) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
     }
 }

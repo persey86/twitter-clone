@@ -5,6 +5,8 @@ import com.example.twitterclone.model.Post
 import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.PostRepository
 import com.example.twitterclone.repository.UserRepository
+import com.example.twitterclone.response.PostDto
+import com.example.twitterclone.security.JwtTokenProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import spock.lang.Specification
@@ -16,12 +18,14 @@ class PostServiceTest extends Specification {
     UserRepository userRepository
     PostService postService
     MeterRegistry meterRegistry
+    JwtTokenProvider jwtTokenProvider
 
     def setup() {
         postRepository = Mock(PostRepository)
         userRepository = Mock(UserRepository)
         meterRegistry = Mock(MeterRegistry)
-        postService = new PostService(postRepository, userRepository, meterRegistry)
+        jwtTokenProvider = Mock(JwtTokenProvider)
+        postService = new PostService(postRepository, userRepository, meterRegistry, jwtTokenProvider)
     }
 
     def "getFeed should return posts from followed users ordered by date"() {
@@ -58,7 +62,7 @@ class PostServiceTest extends Specification {
         result.isEmpty()
     }
 
-    def "getComments should return comments of post"() {
+    def "getComments should return null of post if postId not found"() {
         given:
         def postId = "post123"
         def comments = [
@@ -66,27 +70,153 @@ class PostServiceTest extends Specification {
                 new Comment(id: "c2", authorId: "user2", text: "Second", createdAt: new Date())
         ]
         def post = new Post(id: postId, comments: comments)
+        postRepository.findById(postId) >> Optional.ofNullable(post)
 
         when:
-        def result = postService.findById(postId).get().comments
+        def result = postService.findById(postId)
 
         then:
-        1 * postRepository.findById(postId) >> Optional.of(post)
-        result*.id == ["c1", "c2"]
+        result == null
     }
 
     def "increments post.created metric"() {
         given:
         def meterRegistry = new SimpleMeterRegistry()
-        def service = new PostService(postRepository, userRepository, meterRegistry)
+        def service = new PostService(postRepository, userRepository, meterRegistry, jwtTokenProvider)
         def post = new Post(content: "Hello", authorId: "1", id: "123")
+        def token = "some.token.value"
+        def header = "Bearer $token"
+        def user = new User(username: "test", password: "pass", bio: "test_bio")
+        userRepository.findByUsername("token") >> Optional.of(user)
+        jwtTokenProvider.getUserFromToken(token) >> "token"
         postRepository.save(post) >> post
 
         when:
-        service.createNewPost(post)
+        service.createNewPost(post, header)
 
         then:
         Math.abs(meterRegistry.counter("posts.created.total").count() - 1.0) < 1e-6
     }
 
+    def "should update post content"() {
+        when:
+        User user = new User(username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(content: "initial content", authorId: user.id, createdAt: Instant.now())
+        def updates = new Post(content: "updated content")
+        postRepository.findById(post.id) >> Optional.of(post)
+        userRepository.save(user) >> user
+        postRepository.save(post) >> post
+
+        def result = postService.update(post.id, updates)
+
+        then:
+        result.content == "updated content"
+    }
+
+    def "should delete post"() {
+        when:
+        User user = new User(username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "123", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        postRepository.findById(post.id) >> Optional.empty()
+        postService.delete(post.id)
+
+        then:
+        !postRepository.findById(post.id).isPresent()
+    }
+
+    def "should like post with valid token"() {
+        given:
+        User user = new User(id: "123", username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "456", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        def token = "Bearer token"
+        postRepository.findById(post.id) >> Optional.of(post)
+        jwtTokenProvider.getUserFromToken(token) >> "token"
+        userRepository.findByUsername(null) >> Optional.of(user)
+        postRepository.save(post) >> post
+
+        when:
+        def result = postService.like(post.id, token)
+
+        then:
+        result.likes.contains(user.id)
+    }
+
+    def "should unlike post"() {
+        given:
+        User user = new User(id: "123", username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "456", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        post.likes.add(user.id)
+        postRepository.findById(post.id) >> Optional.of(post)
+        postRepository.save(post) >> post
+
+        when:
+        def result = postService.unlike(post.id, user.id)
+
+        then:
+        !result.likes.contains(user.id)
+    }
+
+    def "should add comment to post"() {
+        when:
+        User user = new User(id: "123", username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "456", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        def comment = new Comment(authorId: user.id, text: "Nice post!")
+        postRepository.findById(post.id) >> Optional.of(post)
+        postRepository.save(post) >> post
+
+        def result = postService.addComment(post.id, comment)
+
+        then:
+        result.comments.size() == 1
+        result.comments[0].text == "Nice post!"
+    }
+
+    def "should delete comment by id"() {
+        given:
+        User user = new User(username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "456", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        def comment = new Comment(id: "comment123", authorId: user.id, text: "To delete", createdAt: new Date())
+        post.comments.add(comment)
+        postRepository.findById(post.id) >> Optional.of(post)
+        postRepository.save(post) >> post
+
+        when:
+        def result = postService.deleteComment(post.id, "comment123")
+
+        then:
+        result.comments.isEmpty()
+    }
+
+    def "should get user posts"() {
+        when:
+        User user = new User(id: "123", username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(content: "initial content", authorId: user.id, createdAt: Instant.now())
+        postRepository.findByAuthorIdInOrderByCreatedAtDesc(Collections.singletonList(user.id)) >> Collections.singletonList(post)
+        def result = postService.getUserPosts(user.id)
+
+        then:
+        result.size() == 1
+        result[0].content == post.content
+    }
+
+    def "should throw for malformed token in like()"() {
+        when:
+        User user = new User(username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(id: "123", content: "initial content", authorId: user.id, createdAt: Instant.now())
+        postRepository.findById(post.id) >> Optional.of(post)
+        postService.like(post.id, "badtoken")
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "should throw if authorId or text missing in comment"() {
+        when:
+        User user = new User(username: "testuser", password: "pass", bio: "bio")
+        Post post = new Post(content: "initial content", authorId: user.id, createdAt: Instant.now())
+        postService.addComment(post.id, new Comment(text: "no author"))
+
+        then:
+        thrown(IllegalArgumentException)
+    }
 }

@@ -5,11 +5,13 @@ import com.example.twitterclone.model.Post
 import com.example.twitterclone.repository.PostRepository
 import com.example.twitterclone.repository.UserRepository
 import com.example.twitterclone.response.PostDto
+import com.example.twitterclone.security.JwtTokenProvider
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 
 import java.time.Instant
@@ -20,19 +22,32 @@ class PostService {
     private PostRepository postRepository
     private UserRepository userRepository
     private MeterRegistry meterRegistry
+    private final JwtTokenProvider jwtTokenProvider
 
-    PostService(PostRepository postRepository, UserRepository userRepository, MeterRegistry meterRegistry) {
+    PostService(PostRepository postRepository, UserRepository userRepository, MeterRegistry meterRegistry, JwtTokenProvider jwtTokenProvider) {
         this.postRepository = postRepository
         this.userRepository = userRepository
         this.meterRegistry = meterRegistry
+        this.jwtTokenProvider = jwtTokenProvider
     }
 
     @CacheEvict(value = "postSearchCache", allEntries = true)
-    PostDto createNewPost(Post post) {
+    PostDto createNewPost(Post post, String token) {
         post.createdAt = Instant.now()
+        post.authorId = getUserIdFromToken(token)
         def savedPost = postRepository.save(post)
         meterRegistry.counter("posts.created.total").increment()
         return toDto(savedPost)
+    }
+
+    private String getUserIdFromToken(String token) {
+        if (!token?.startsWith("Bearer ")) {
+           throw new IllegalArgumentException("Token has incorrect format")
+        }
+        def tokenValue = token.substring(7)
+        def userNameFromToken = jwtTokenProvider.getUserFromToken(tokenValue)
+        def user = userRepository.findByUsername(userNameFromToken).orElseThrow { new UsernameNotFoundException("User not found") }
+        return user.id
     }
 
     @CacheEvict(value = "postSearchCache", allEntries = true)
@@ -48,8 +63,9 @@ class PostService {
         postRepository.deleteById(id)
     }
 
-    PostDto like(String postId, String userId) {
+    PostDto like(String postId, String token) {
         def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def userId = getUserIdFromToken(token)
         post.likes.add(userId)
         def likes = postRepository.save(post)
 
@@ -83,12 +99,16 @@ class PostService {
     }
 
     List<PostDto> getUserPosts(String userId) {
-        List<Post> posts = postRepository.findByAuthorIdInOrderByCreatedAtDesc(Collections.singletonList(userId))
-        return toListDto(posts)
+        if (userId) {
+            List<Post> posts = postRepository.findByAuthorIdInOrderByCreatedAtDesc(Collections.singletonList(userId))
+            return toListDto(posts)
+        }
+        return Collections.EMPTY_LIST
     }
 
-    Optional<Post> findById(String id) {
+    Optional<PostDto> findById(String id) {
         return postRepository.findById(id)
+                .ifPresentOrElse(post -> toDto(post), () -> Optional.empty())
     }
 
     List<PostDto> getFeed(String userId) {
@@ -99,7 +119,7 @@ class PostService {
     }
 
     List<Comment> getCommentsByPostId(String postId) {
-        def post = findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
         return post.comments
     }
 

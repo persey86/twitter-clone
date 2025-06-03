@@ -1,7 +1,10 @@
 package com.example.twitterclone.service
 
+
 import com.example.twitterclone.model.User
+import com.example.twitterclone.repository.RefreshTokenRepository
 import com.example.twitterclone.repository.UserRepository
+import com.example.twitterclone.response.TokenResponseDto
 import com.example.twitterclone.response.UserRequestDto
 import com.example.twitterclone.response.UserResponseDto
 import com.example.twitterclone.security.JwtTokenProvider
@@ -18,24 +21,31 @@ class UserService {
     private final JwtTokenProvider jwtTokenProvider
     private final PasswordEncoder passwordEncoder
     private final AuthenticationManager authenticationManager
+    private final RefreshTokenService refreshTokenService
+    private final RefreshTokenRepository refreshTokenRepository
 
-    UserService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+    UserService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,
+                AuthenticationManager authenticationManager, RefreshTokenService refreshTokenService,
+                RefreshTokenRepository refreshTokenRepository) {
         this.userRepository = userRepository
         this.jwtTokenProvider = jwtTokenProvider
         this.passwordEncoder = passwordEncoder
         this.authenticationManager = authenticationManager
+        this.refreshTokenService = refreshTokenService
+        this.refreshTokenRepository = refreshTokenRepository
     }
 
-    def register(User user) {
-        isUserRegistered(user.username)
+    def register(UserRequestDto dto) {
+        isUserRegistered(dto.username)
         // do encode password
-        def encodedPassword = passwordEncoder.encode(user.password)
-        user.setPassword(encodedPassword)
-        // generate token
-        def token = jwtTokenProvider.generateToken(user.username)
-        userRepository.save(user)
-
-        return toDto(user, token)
+        def encodedPassword = passwordEncoder.encode(dto.password)
+        User user = new User(
+                password: encodedPassword,
+                username: dto.username,
+                bio: dto.bio
+        )
+        def savedUser = userRepository.save(user)
+        return toDto(savedUser)
     }
 
     private void isUserRegistered(String username) {
@@ -85,30 +95,48 @@ class UserService {
             new IllegalArgumentException("Username can't be empty or null!")
         }
 
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username, request.password))
         def user = userRepository.findByUsername(userName).orElseThrow { new UsernameNotFoundException("User not found") }
-        def token = jwtTokenProvider.generateToken(userName)
-        return toDto(user, token)
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw new IllegalArgumentException("Invalid password")
+        }
+
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username, request.password))
+        def newAccToken = jwtTokenProvider.generateToken(user.username)
+        def newRefreshToken = refreshTokenService.createRefreshToken(user)
+        return toResponseTokenDto(newAccToken, newRefreshToken.token)
     }
 
-    void logOut(String authHeader) {
-        def token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null
-        if (token) {
+    void logOut(String authHeader, String refreshToken) {
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            def token = authHeader.substring(7)
             jwtTokenProvider.invalidateToken(token)
         }
+
+        refreshTokenService.findByToken(refreshToken)
+                .ifPresentOrElse(refToken ->
+                        refreshTokenService.deleteByUserId(refToken.userId), () -> new UsernameNotFoundException("Token not found"))
+    }
+
+    def refreshToken(String refreshToken) {
+        def storedToken = refreshTokenService.findByToken(refreshToken)
+                .map(refreshTokenService.&verifyExpiration)
+        .orElseThrow {new IllegalArgumentException("Refresh token not found or revoked")}
+
+        def userId = jwtTokenProvider.getUserFromToken(refreshToken)
+        def user = userRepository.findById(userId).orElseThrow { new IllegalArgumentException("User not found") }
+        def newAccessToken = jwtTokenProvider.generateToken(user.username)
+        def newRefreshToken = jwtTokenProvider.generateRefreshToken(user)
+        storedToken.token = newRefreshToken
+        storedToken.expiryDate = jwtTokenProvider.getRefreshTokenExpirationDate(newRefreshToken)
+        refreshTokenRepository.save(storedToken)
+
+        return toResponseTokenDto(newAccessToken, newRefreshToken)
     }
 
     boolean isTokenValid(String authHeader) {
         def token = authHeader?.substring(7)
         return jwtTokenProvider.isValidToken(token)
-    }
-
-    private static UserResponseDto toDto(User user, String token) {
-        return UserResponseDto.builder()
-                .id(user.id)
-                .token(token)
-                .bio(user.bio)
-                .build()
     }
 
     private static UserResponseDto toDto(User user) {
@@ -119,4 +147,10 @@ class UserService {
                 .build()
     }
 
+    private static TokenResponseDto toResponseTokenDto(String accToken, String refreshToken) {
+        return TokenResponseDto.builder()
+        .accessToken(accToken)
+        .refreshToken(refreshToken)
+        .build()
+    }
 }

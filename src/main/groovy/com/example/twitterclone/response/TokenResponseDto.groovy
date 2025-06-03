@@ -9,11 +9,7 @@ import groovy.transform.builder.Builder
 @TupleConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class UserResponseDto {
-    String id
-    String token
-    String bio
-    Set<String> following = [] as Set
-
-    UserResponseDto() {}
+class TokenResponseDto {
+    String accessToken
+    String refreshToken
 }

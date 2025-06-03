@@ -3,10 +3,13 @@ package com.example.twitterclone.model
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
-@Document(collection = "expired_tokens")
-class ExpiredToken {
+import java.time.Instant
+
+@Document(collection = "refresh_tokens")
+class RefreshToken {
     @Id
     String id
+    String userId
     String token
-    Date expiration
+    Instant expiryDate
 }

@@ -29,4 +29,5 @@ management:
 
 jwt:
   secret: aVerySecureKeyThatIsAtLeast32BytesLong!
-  expiration: 86400000
+  expiration: 900000  # 15 min
+  refresh-token-expiration: 604800000  # 7 days

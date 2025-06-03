@@ -20,8 +20,8 @@ class PostController {
 
     @Operation(summary = "Create post")
     @PostMapping
-    PostDto createPost(@RequestBody Post post) {
-        return postService.createNewPost(post)
+    PostDto createPost(@RequestHeader("Authorization") String authHeader, @RequestBody Post post) {
+        return postService.createNewPost(post, authHeader)
     }
 
     @Operation(summary = "Update post")
@@ -36,9 +36,9 @@ class PostController {
         postService.delete(id)
     }
 
-    @PostMapping("/{postId}/like/{userId}")
-    PostDto like(@PathVariable("postId") String postId, @PathVariable("userId") String userId) {
-        return postService.like(postId, userId)
+    @PostMapping("/{postId}/like")
+    PostDto like(@RequestHeader("Authorization") String authHeader, @PathVariable("postId") String postId) {
+        return postService.like(postId, authHeader)
     }
 
     @PostMapping("/{id}/unlike/{userId}")
@@ -65,7 +65,7 @@ class PostController {
     }
 
     @GetMapping("/{id}")
-    Post get(@PathVariable("id") String id) {
+    PostDto get(@PathVariable("id") String id) {
         return postService.findById(id).orElseThrow {
             new IllegalArgumentException("Post not found")
         }
@@ -89,7 +89,7 @@ class PostController {
     @GetMapping(value = "/search", produces = "application/json")
     ResponseEntity<List<PostDto>> searchPosts(
             @RequestParam(value = "query") String query,
-            @RequestParam(value = "limit", required = false) int limit,
+            @RequestParam(value = "limit", required = false, defaultValue = "5") int limit,
             @RequestParam(value = "afterId", required = false) String afterId) {
         def result = postService.searchPosts(query, limit, afterId)
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(result)

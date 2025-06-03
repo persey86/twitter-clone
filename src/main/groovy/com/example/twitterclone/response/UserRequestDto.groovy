@@ -10,6 +10,7 @@ import groovy.transform.TupleConstructor
 class UserRequestDto {
     String username
     String password
+    String bio
 
     UserRequestDto() {
     }
