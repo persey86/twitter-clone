@@ -163,8 +163,13 @@
 			"name": "Like Post",
 			"request": {
 				"method": "POST",
-				"header": [],
-				"url": "localhost:8080/posts/<PUT-POST-ID>/like/<PUT-USER-ID>"
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwtToken}}"
+					}
+				],
+				"url": "localhost:8080/posts/{{postId}}/like"
 			},
 			"response": []
 		},
@@ -277,6 +282,20 @@
 					"raw": ""
 				},
 				"url": "localhost:8080/auth/logout"
+			},
+			"response": []
+		},
+		{
+			"name": "Refresh Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{refreshToken}}"
+					}
+				],
+				"url": "{{baseUrl}}/auth/refresh"
 			},
 			"response": []
 		}
