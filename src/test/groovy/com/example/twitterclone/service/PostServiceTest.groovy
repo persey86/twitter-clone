@@ -5,13 +5,15 @@ import com.example.twitterclone.model.Post
 import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.PostRepository
 import com.example.twitterclone.repository.UserRepository
-import com.example.twitterclone.response.PostDto
 import com.example.twitterclone.security.JwtTokenProvider
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import spock.lang.Specification
 
 import java.time.Instant
+import java.util.regex.Pattern
 
 class PostServiceTest extends Specification {
     PostRepository postRepository
@@ -218,5 +220,62 @@ class PostServiceTest extends Specification {
 
         then:
         thrown(IllegalArgumentException)
+    }
+
+    def "should return posts matching query without afterId"() {
+        given:
+        def query = "test"
+        def limit = 2
+        def afterId = null
+        def pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
+        def regex = ".*${Pattern.quote(query)}.*"
+
+        def post1 = new Post(id: "1", content: "test post 1", createdAt: Instant.now(), authorId: "u1")
+        def post2 = new Post(id: "2", content: "another test post", createdAt: Instant.now().minusSeconds(60), authorId: "u2")
+        def posts = [post1, post2]
+
+        when:
+        def result = postService.searchPosts(query, limit, afterId)
+
+        then:
+        1 * postRepository.findByContentRegexIgnoreCaseOrderByCreatedAtDesc(regex, pageable) >> posts
+        result.size() == 2
+        result*.content.contains("test post 1")
+    }
+
+    def "should return posts matching query after given postId"() {
+        given:
+        def query = "hello"
+        def limit = 3
+        def afterId = "99"
+        def pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
+        def regex = ".*${Pattern.quote(query)}.*"
+
+        def afterPost = new Post(id: afterId, content: "something", createdAt: Instant.parse("2025-06-01T12:00:00Z"))
+        def post1 = new Post(id: "55", content: "hello there", createdAt: Instant.parse("2025-06-01T11:59:00Z"), authorId: "u3")
+        def posts = [post1]
+
+        when:
+        def result = postService.searchPosts(query, limit, afterId)
+
+        then:
+        1 * postRepository.findById(afterId) >> Optional.of(afterPost)
+        1 * postRepository.findByContentRegexIgnoreCaseAndCreatedAtLessThanOrderByCreatedAtDesc(regex, afterPost.createdAt, pageable) >> posts
+        result.size() == 1
+        result[0].content == "hello there"
+    }
+
+    def "should throw exception if afterId not found"() {
+        given:
+        def query = "missing"
+        def limit = 5
+        def afterId = "not-found"
+
+        when:
+        postService.searchPosts(query, limit, afterId)
+
+        then:
+        1 * postRepository.findById(afterId) >> Optional.empty()
+        thrown(NoSuchElementException)
     }
 }

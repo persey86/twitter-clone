@@ -86,6 +86,11 @@ class UserService {
         return userRepository.findById(id).orElseThrow { new NoSuchElementException("User not found") }
     }
 
+    UserResponseDto findByUserName(String userName) {
+        def user = userRepository.findByUsername(userName).orElseThrow { new NoSuchElementException("User not found") }
+        return toDto(user)
+    }
+
     def logIn(UserRequestDto request) {
         def userName = request.username
         if (!userName?.trim()) {

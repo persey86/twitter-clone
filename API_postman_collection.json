@@ -219,13 +219,26 @@
 			"response": []
 		},
 		{
-			"name": "Get All users",
+			"name": "Get user by name",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": "localhost:8081/users"
 			},
-			"response": []
+			"response": [
+				{
+					"name": "Get user by name",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": "localhost:8081/users/<USER-NAME>"
+					},
+					"_postman_previewlanguage": "",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
 		},
 		{
 			"name": "Register",

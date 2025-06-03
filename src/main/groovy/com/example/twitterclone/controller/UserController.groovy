@@ -1,6 +1,7 @@
 package com.example.twitterclone.controller
 
 import com.example.twitterclone.model.User
+import com.example.twitterclone.response.UserResponseDto
 import com.example.twitterclone.service.UserService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.*
@@ -39,9 +40,9 @@ class UserController {
     }
 
     @Operation(summary = "Get User's profile")
-    @GetMapping("/{id}")
-    User get(@PathVariable("id") String id) {
-        return userService.findById(id)
+    @GetMapping("/{name}")
+    UserResponseDto get(@PathVariable("name") String userName) {
+        return userService.findByUserName(userName)
     }
 
 }
