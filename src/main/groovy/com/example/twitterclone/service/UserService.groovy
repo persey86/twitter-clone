@@ -1,6 +1,5 @@
 package com.example.twitterclone.service
 
-
 import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.RefreshTokenRepository
 import com.example.twitterclone.repository.UserRepository
@@ -8,10 +7,8 @@ import com.example.twitterclone.response.TokenResponseDto
 import com.example.twitterclone.response.UserRequestDto
 import com.example.twitterclone.response.UserResponseDto
 import com.example.twitterclone.security.JwtTokenProvider
-import org.apache.commons.lang3.StringUtils
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -50,7 +47,7 @@ class UserService {
 
     private void isUserRegistered(String username) {
         if (userRepository.findByUsername(username).present) {
-            throw IllegalArgumentException("Username already exists")
+            throw new IllegalArgumentException("Username already exists")
         }
     }
 
@@ -71,8 +68,8 @@ class UserService {
             throw new IllegalArgumentException("Cannot follow yourself")
         }
 
-        def follower = userRepository.findById(userId).orElseThrow { new IllegalArgumentException("Follower not found") }
-        def followee = userRepository.findById(targetId).orElseThrow { new IllegalArgumentException("Followee not found") }
+        def follower = userRepository.findById(userId).orElseThrow { new NoSuchElementException("Follower not found") }
+        def followee = userRepository.findById(targetId).orElseThrow { new NoSuchElementException("Followee not found") }
         follower.following.add(targetId)
         userRepository.save(follower)
         return toDto(follower)
@@ -86,16 +83,16 @@ class UserService {
     }
 
     User findById(String id) {
-        return userRepository.findById(id).orElseThrow { new IllegalArgumentException("User not found") }
+        return userRepository.findById(id).orElseThrow { new NoSuchElementException("User not found") }
     }
 
     def logIn(UserRequestDto request) {
         def userName = request.username
-        if (StringUtils.isNoneBlank(userName)) {
-            new IllegalArgumentException("Username can't be empty or null!")
+        if (!userName?.trim()) {
+            throw new IllegalArgumentException("Username can't be empty or null!")
         }
 
-        def user = userRepository.findByUsername(userName).orElseThrow { new UsernameNotFoundException("User not found") }
+        def user = userRepository.findByUsername(userName).orElseThrow { new NoSuchElementException("User not found") }
 
         if (!passwordEncoder.matches(request.password, user.password)) {
             throw new IllegalArgumentException("Invalid password")
@@ -115,16 +112,16 @@ class UserService {
 
         refreshTokenService.findByToken(refreshToken)
                 .ifPresentOrElse(refToken ->
-                        refreshTokenService.deleteByUserId(refToken.userId), () -> new UsernameNotFoundException("Token not found"))
+                        refreshTokenService.deleteByUserId(refToken.userId), () -> new NoSuchElementException("Token not found"))
     }
 
     def refreshToken(String refreshToken) {
         def storedToken = refreshTokenService.findByToken(refreshToken)
                 .map(refreshTokenService.&verifyExpiration)
-        .orElseThrow {new IllegalArgumentException("Refresh token not found or revoked")}
+        .orElseThrow {new NoSuchElementException("Refresh token not found or revoked")}
 
         def userId = jwtTokenProvider.getUserFromToken(refreshToken)
-        def user = userRepository.findById(userId).orElseThrow { new IllegalArgumentException("User not found") }
+        def user = userRepository.findById(userId).orElseThrow { new NoSuchElementException("User not found") }
         def newAccessToken = jwtTokenProvider.generateToken(user.username)
         def newRefreshToken = jwtTokenProvider.generateRefreshToken(user)
         storedToken.token = newRefreshToken

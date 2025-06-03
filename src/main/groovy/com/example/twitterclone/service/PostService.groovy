@@ -64,7 +64,7 @@ class PostService {
     }
 
     PostDto like(String postId, String token) {
-        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         def userId = getUserIdFromToken(token)
         post.likes.add(userId)
         def likes = postRepository.save(post)
@@ -73,7 +73,7 @@ class PostService {
     }
 
     PostDto unlike(String postId, String userId) {
-        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         post.likes.remove(userId)
         def unlike = postRepository.save(post)
         return toDto(unlike)
@@ -81,10 +81,10 @@ class PostService {
 
     PostDto addComment(String postId, Comment comment) {
         if (!comment?.authorId || !comment?.text) {
-            throw new IllegalArgumentException("authorId and text must not be empty")
+            throw new IllegalArgumentException("authorId or text must not be empty")
         }
 
-        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         comment.createdAt = new Date()
         post.comments.add(comment)
         def savedComment = postRepository.save(post)
@@ -92,7 +92,7 @@ class PostService {
     }
 
     PostDto deleteComment(String postId, String commentId) {
-        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         post.comments.removeIf { it.id == commentId }
         def result = postRepository.save(post)
         return toDto(result)
@@ -112,14 +112,14 @@ class PostService {
     }
 
     List<PostDto> getFeed(String userId) {
-        def user = userRepository.findById(userId).orElseThrow { new IllegalArgumentException("User not found") }
+        def user = userRepository.findById(userId).orElseThrow { new NoSuchElementException("User not found") }
         def authorIds = new ArrayList<>(user.following)
         def posts = postRepository.findByAuthorIdInOrderByCreatedAtDesc(authorIds)
         return toListDto(posts)
     }
 
     List<Comment> getCommentsByPostId(String postId) {
-        def post = postRepository.findById(postId).orElseThrow { new IllegalArgumentException("Post not found") }
+        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         return post.comments
     }
 

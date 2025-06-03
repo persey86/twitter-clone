@@ -198,7 +198,7 @@ class UserServiceTest extends Specification {
         userService.refreshToken(refreshTokenStr)
 
         then:
-        def ex = thrown(IllegalArgumentException)
+        def ex = thrown(NoSuchElementException)
         ex.message == "Refresh token not found or revoked"
     }
 
@@ -217,7 +217,7 @@ class UserServiceTest extends Specification {
         userService.refreshToken(refreshTokenStr)
 
         then:
-        def ex = thrown(IllegalArgumentException)
+        def ex = thrown(NoSuchElementException)
         ex.message == "User not found"
     }
 }

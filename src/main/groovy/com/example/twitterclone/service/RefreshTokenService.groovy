@@ -34,7 +34,7 @@ class RefreshTokenService {
     RefreshToken verifyExpiration(RefreshToken token) {
         if (token.expiryDate.isBefore(Instant.now())) {
             refreshTokenRepository.delete(token)
-            throw new RuntimeException("Refresh token expired.")
+            throw new NoSuchElementException("Refresh token expired.")
         }
         return token
     }
