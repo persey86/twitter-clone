@@ -93,14 +93,14 @@ http://localhost:8080/swagger-ui.html
 Some configurations can be overridden via:
 
 - `application.yml`
-- `SPRING_PROFILES_ACTIVE=test|prod`
+- `SPRING_PROFILES_ACTIVE=test|dev`
 - `spring.redis.host`, `spring.redis.port`
-- `jwt.secret`, `jwt.expiration`
+- `jwt.secret`, `jwt.expiration`, `refresh-token-expiration`
 
 ## 📌 Sample Endpoint: User Feed
 
 ```
-GET /posts/user/{userId}
+GET /posts/feed/{postId}
 Authorization: Bearer <jwt_token>
 ```
 
@@ -110,5 +110,6 @@ Authorization: Bearer <jwt_token>
 - [ ] Reactions to comments
 - [ ] Frontend web interface
 - [ ] Rate limiting & abuse protection
+- [ ] Third party auth service integration
 
 ---
