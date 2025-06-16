@@ -1,0 +1,29 @@
+# Sys/IDE files
+.idea/
+*.iml
+*.log
+*.swp
+*.swo
+
+# Git-repo
+.git
+.gitignore
+
+# Build artefacts
+/build/
+.gradle/
+out/
+
+README.md
+LICENSE
+*.md
+
+# OS's
+.DS_Store
+Thumbs.db
+
+# CI/CD artefacts
+*.env
+*.jar
+*.war
+*.class
