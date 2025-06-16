@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 import java.time.Instant
 import java.util.regex.Pattern
@@ -31,6 +32,7 @@ class PostService {
         this.jwtTokenProvider = jwtTokenProvider
     }
 
+    @Transactional
     @CacheEvict(value = "postSearchCache", allEntries = true)
     PostDto createNewPost(Post post, String token) {
         post.createdAt = Instant.now()
@@ -50,6 +52,7 @@ class PostService {
         return user.id
     }
 
+    @Transactional
     @CacheEvict(value = "postSearchCache", allEntries = true)
     PostDto update(String id, Post updates) {
         def post = postRepository.findById(id).orElseThrow { new IllegalArgumentException("Post not found") }
@@ -58,11 +61,13 @@ class PostService {
         return toDto(updatedPost)
     }
 
+    @Transactional
     @CacheEvict(value = "postSearchCache", allEntries = true)
     void delete(String id) {
         postRepository.deleteById(id)
     }
 
+    @Transactional
     PostDto like(String postId, String token) {
         def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         def userId = getUserIdFromToken(token)
@@ -72,6 +77,7 @@ class PostService {
         return toDto(likes)
     }
 
+    @Transactional
     PostDto unlike(String postId, String userId) {
         def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         post.likes.remove(userId)
@@ -79,6 +85,7 @@ class PostService {
         return toDto(unlike)
     }
 
+    @Transactional
     PostDto addComment(String postId, Comment comment) {
         if (!comment?.authorId || !comment?.text) {
             throw new IllegalArgumentException("authorId or text must not be empty")
@@ -91,6 +98,7 @@ class PostService {
         return toDto(savedComment)
     }
 
+    @Transactional
     PostDto deleteComment(String postId, String commentId) {
         def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         post.comments.removeIf { it.id == commentId }
@@ -98,6 +106,7 @@ class PostService {
         return toDto(result)
     }
 
+    @Transactional(readOnly = true)
     List<PostDto> getUserPosts(String userId) {
         if (userId) {
             List<Post> posts = postRepository.findByAuthorIdInOrderByCreatedAtDesc(Collections.singletonList(userId))
@@ -106,11 +115,13 @@ class PostService {
         return Collections.EMPTY_LIST
     }
 
+    @Transactional(readOnly = true)
     Optional<PostDto> findById(String id) {
         return postRepository.findById(id)
                 .ifPresentOrElse(post -> toDto(post), () -> Optional.empty())
     }
 
+    @Transactional(readOnly = true)
     List<PostDto> getFeed(String userId) {
         def user = userRepository.findById(userId).orElseThrow { new NoSuchElementException("User not found") }
         def authorIds = new ArrayList<>(user.following)
@@ -118,6 +129,7 @@ class PostService {
         return toListDto(posts)
     }
 
+    @Transactional(readOnly = true)
     List<Comment> getCommentsByPostId(String postId) {
         def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         return post.comments

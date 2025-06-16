@@ -7,6 +7,7 @@ import com.example.twitterclone.security.JwtTokenProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 import java.time.Instant
 
@@ -22,6 +23,7 @@ class RefreshTokenService {
     @Autowired
     JwtTokenProvider jwtTokenProvider
 
+    @Transactional
     RefreshToken createRefreshToken(User user) {
         def token = new RefreshToken(
                 userId: user.id,
@@ -31,6 +33,7 @@ class RefreshTokenService {
         refreshTokenRepository.save(token)
     }
 
+    @Transactional
     RefreshToken verifyExpiration(RefreshToken token) {
         if (token.expiryDate.isBefore(Instant.now())) {
             refreshTokenRepository.delete(token)
@@ -39,10 +42,12 @@ class RefreshTokenService {
         return token
     }
 
+    @Transactional
     void deleteByUserId(String userId) {
         refreshTokenRepository.deleteByUserId(userId)
     }
 
+    @Transactional(readOnly = true)
     Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token)
     }

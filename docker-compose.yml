@@ -6,7 +6,7 @@ services:
        - "8080:8080"
      environment :
        - SPRING_PROFILES_ACTIVE=dev
-       - MONGODB_URI=mongodb://mongo:27017/twitterclone
+       - MONGODB_URI=mongodb://mongo:27017/twitterclone?replicaSet=rs0
        - SPRING_DATA_REDIS_HOST=redis
        - SPRING_DATA_REDIS_PORT=6379
      depends_on:
@@ -14,8 +14,9 @@ services:
        - redis
 
    mongo:
-     image: mongo:latest
+     image: mongo:6
      restart: always
+     command: ["mongod", "--replSet", "rs0"]
      ports:
        - "27017:27017"
 

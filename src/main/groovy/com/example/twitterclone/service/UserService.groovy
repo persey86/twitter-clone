@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService {
@@ -32,6 +33,7 @@ class UserService {
         this.refreshTokenRepository = refreshTokenRepository
     }
 
+    @Transactional
     def register(UserRequestDto dto) {
         isUserRegistered(dto.username)
         // do encode password
@@ -51,6 +53,7 @@ class UserService {
         }
     }
 
+    @Transactional
     def update(String id, User updates) {
         def existingUser = findById(id)
         existingUser.bio = updates.bio ?: existingUser.bio
@@ -63,6 +66,7 @@ class UserService {
         userRepository.deleteById(id)
     }
 
+    @Transactional
     def follow(String userId, String targetId) {
         if (userId == targetId) {
             throw new IllegalArgumentException("Cannot follow yourself")
@@ -75,6 +79,7 @@ class UserService {
         return toDto(follower)
     }
 
+    @Transactional
     def unfollow(String userId, String targetId) {
         def user = findById(userId)
         user.following.remove(targetId)
@@ -86,11 +91,13 @@ class UserService {
         return userRepository.findById(id).orElseThrow { new NoSuchElementException("User not found") }
     }
 
+    @Transactional(readOnly = true)
     UserResponseDto findByUserName(String userName) {
         def user = userRepository.findByUsername(userName).orElseThrow { new NoSuchElementException("User not found") }
         return toDto(user)
     }
 
+    @Transactional
     def logIn(UserRequestDto request) {
         def userName = request.username
         if (!userName?.trim()) {
@@ -120,6 +127,7 @@ class UserService {
                         refreshTokenService.deleteByUserId(refToken.userId), () -> new NoSuchElementException("Token not found"))
     }
 
+    @Transactional
     def refreshToken(String refreshToken) {
         def storedToken = refreshTokenService.findByToken(refreshToken)
                 .map(refreshTokenService.&verifyExpiration)

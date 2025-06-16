@@ -5,6 +5,7 @@ import com.example.twitterclone.model.Post
 import com.example.twitterclone.model.User
 import com.example.twitterclone.repository.PostRepository
 import com.example.twitterclone.repository.UserRepository
+import groovy.util.logging.Slf4j
 import org.springframework.boot.CommandLineRunner
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 
 @Component
+@Slf4j
 class DataLoader implements CommandLineRunner {
     private final PostRepository postRepository
     private final UserRepository userRepository
@@ -148,7 +150,7 @@ class DataLoader implements CommandLineRunner {
         postRepository.save(post)
         postRepository.save(post11)
 
-        System.out.println("Test data has been loaded into the Posts collection.")
+        log.warn("Test data has been loaded into the Posts collection.")
 
     }
 }

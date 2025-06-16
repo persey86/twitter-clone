@@ -4,6 +4,7 @@ import com.example.twitterclone.model.ExpiredToken
 import com.example.twitterclone.repository.ExpiredTokenRepository
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Slf4j
@@ -14,6 +15,7 @@ class ExpiredTokenService {
         this.expiredTokenRepository = expiredTokenRepository
     }
 
+    @Transactional
     void invalidateToken(String token) {
         def expiredToken = expiredTokenRepository.save(new ExpiredToken(token: token, expiration: new Date()))
         log.info("Token with id: {} has invalidated", expiredToken.id)
