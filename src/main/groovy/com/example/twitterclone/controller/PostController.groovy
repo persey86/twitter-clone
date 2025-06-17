@@ -41,9 +41,10 @@ class PostController {
         return postService.like(postId, authHeader)
     }
 
-    @PostMapping("/{id}/unlike/{userId}")
-    PostDto unlike(@PathVariable("id") String id, @PathVariable("userId") String userId) {
-        return postService.unlike(id, userId)
+    @PostMapping("/{postId}/unlike")
+    PostDto unlike(@RequestHeader("Authorization") String authHeader,
+                   @PathVariable("postId") String postId) {
+        return postService.unlike(postId, authHeader)
     }
 
     @Operation(summary = "Add new comment by post id")

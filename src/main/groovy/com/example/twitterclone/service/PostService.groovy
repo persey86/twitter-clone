@@ -69,20 +69,30 @@ class PostService {
 
     @Transactional
     PostDto like(String postId, String token) {
-        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
         def userId = getUserIdFromToken(token)
-        post.likes.add(userId)
-        def likes = postRepository.save(post)
+        def updateResult = postRepository.updateAddToLikes(postId, userId)
 
-        return toDto(likes)
+        if (updateResult.modifiedCount == 0) {
+            throw new IllegalStateException("User already liked this post or post not found")
+        }
+
+        def updatedPost = postRepository.findById(postId)
+                .orElseThrow { new NoSuchElementException("Post not found after update") }
+
+        return toDto(updatedPost)
     }
 
     @Transactional
-    PostDto unlike(String postId, String userId) {
-        def post = postRepository.findById(postId).orElseThrow { new NoSuchElementException("Post not found") }
-        post.likes.remove(userId)
-        def unlike = postRepository.save(post)
-        return toDto(unlike)
+    PostDto unlike(String postId, String token) {
+        def userId = getUserIdFromToken(token)
+        def updateResult = postRepository.updateRemoveFromLikes(postId, userId)
+        if (updateResult.modifiedCount == 0) {
+            throw new IllegalStateException("User has not liked this post or post not found")
+        }
+        def updatedPost = postRepository.findById(postId)
+                .orElseThrow { new NoSuchElementException("Post not found after update") }
+
+        return toDto(updatedPost)
     }
 
     @Transactional

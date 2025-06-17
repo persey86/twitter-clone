@@ -6,8 +6,9 @@ import org.springframework.data.mongodb.repository.MongoRepository
 
 import java.time.Instant
 
-interface PostRepository extends MongoRepository<Post, String> {
+interface PostRepository extends MongoRepository<Post, String>, CustomPostRepository {
     List<Post> findByAuthorIdInOrderByCreatedAtDesc(List<String> authorIds)
     List<Post> findByContentRegexIgnoreCaseAndCreatedAtLessThanOrderByCreatedAtDesc(String regex, Instant before, Pageable pageable)
     List<Post> findByContentRegexIgnoreCaseOrderByCreatedAtDesc(String regex, Pageable pageable);
 }
+
